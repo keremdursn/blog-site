@@ -24,17 +24,14 @@ func SignUp(c *fiber.Ctx) error {
 func LogIn(c *fiber.Ctx) error {
 
 	var login model.Login
-	c.BodyParser(&login)
-	username := login.Username
-	password := login.Password
+	// c.BodyParser(&login)
 
-	log.Println("**********", username)
-	log.Println("**********", password)
+	// log.Println("**********", username)
+	// log.Println("**********", password)
 	var user model.User
-	err := database.DB.Db.Where("username =? and password =? ", username, password).First(&user).Error
+	err := database.DB.Db.Where("username =? and password =? ", login.Username, login.Password).First(&user).Error
 	if err != nil {
-		log.Println("login olmadi")
-		return err
+		return c.Status(400).JSON(fiber.Map{"status": "failed", "message": "user not found"})
 	}
 	return c.Status(200).JSON(fiber.Map{"status": "success", "message": "login success", "data": user})
 }
