@@ -22,7 +22,7 @@ func Connect() {
 	p := config.Config("POSTGRES_PORT")
 	port, err := strconv.ParseUint(p, 10, 32)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error parsing str to int", err)
 		return
 	}
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
@@ -33,10 +33,10 @@ func Connect() {
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Failed to connect to databse. \n", err)
 		return
 	}
-	log.Println("connected success")
+	log.Println("Connected")
 	db.Logger = logger.Default.LogMode(logger.Info)
 	log.Println("running migrations")
 	db.AutoMigrate(&model.User{})

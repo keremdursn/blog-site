@@ -7,8 +7,9 @@ import (
 )
 
 func User(app *fiber.App) {
-	api := app.Group("/user")
+	api := app.Group("/api")
+	v1 := api.Group("/user")
 
-	api.Post("/signup", controllers.SignUp)
-	api.Get("/login", controllers.LogIn)
+	v1.Post("/signup", controllers.SignUp)
+	v1.Get("/login", controllers.LogIn)
 }
