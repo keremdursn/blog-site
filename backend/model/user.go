@@ -1,27 +1,16 @@
 package model
 
 import (
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type User struct {
 	gorm.Model
-	ID       uuid.UUID `gorm:"type:uuid;"`
-	Name     string    `json:"name"`
-	Surname  string    `json:"surname"`
-	Username string    `json:"username"`
-	Password string    `json:"password"`
-}
-
-type Users struct {
-	Users []User `json:"users"`
-}
-
-func (user *User) BeforeCreate(tx *gorm.DB) (err error) {
-	// UUID version 4
-	user.ID = uuid.New()
-	return
+	ID       uint   `gorm:"primaryKey;autoIncrement"`
+	Name     string `json:"name"`
+	Surname  string `json:"surname"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type UpdateUser struct {
@@ -31,6 +20,9 @@ type UpdateUser struct {
 }
 
 type ChangePassword struct {
+	OldPassword  string `json:"oldpassword"`
+	NewPassword1 string `json:"newpassword1"`
+	NewPassword2 string `json:"newpassword2"`
 }
 
 type Login struct {
