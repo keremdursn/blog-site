@@ -18,6 +18,7 @@ func SignUp(c *fiber.Ctx) error {
 	// 	return c.Status(400).JSON(fiber.Map{"status": "failed", "message": "username already taken."})
 	// }
 
+	user.Password = helpers.HashPass(user.Password)
 	err := db.Create(&user).Error
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"status": "error", "message": " server error"})
@@ -31,7 +32,7 @@ func LogIn(c *fiber.Ctx) error {
 
 	c.BodyParser(&login)
 
-	// login.Password = helpers.HashPass(login.Password)
+	login.Password = helpers.HashPass(login.Password)
 
 	user := new(model.User)
 	err := db.Where("username =? and password =? ", login.Username, login.Password).First(&user).Error
@@ -53,18 +54,18 @@ func LogIn(c *fiber.Ctx) error {
 }
 
 func LogOut(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(model.User)
-	if !ok {
-		return c.Status(400).JSON(fiber.Map{"Status": "Error", "data": ok})
+	user, err := middleware.TokenControl(c)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "server error"})
 	}
 	db := database.DB.Db
 	session := new(model.Session)
-	err := db.Where("user_id = ? ", user.ID).First(&session).Error
+	err = db.Where("user_id = ? ", user.ID).First(&session).Error
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "server error"})
 	}
 	session.IsActive = false
-	
+
 	err = database.DB.Db.Raw("DELETE FROM sessions WHERE user_id= ?", user.ID).Scan(&session).Error
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "server error"})
@@ -74,9 +75,9 @@ func LogOut(c *fiber.Ctx) error {
 }
 
 func UpdateUser(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(model.User)
-	if !ok {
-		return c.Status(400).JSON(fiber.Map{"Status": "Error", "data": ok})
+	user, err := middleware.TokenControl(c)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "server error"})
 	}
 
 	db := database.DB.Db
@@ -114,7 +115,7 @@ func UpdateUser(c *fiber.Ctx) error {
 		user.Username = username
 	}
 
-	err := db.Save(&user).Error
+	err = db.Save(&user).Error
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "server error"})
 	}
@@ -123,29 +124,41 @@ func UpdateUser(c *fiber.Ctx) error {
 }
 
 func ChangePassword(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(model.User)
-	if !ok {
-		return c.Status(400).JSON(fiber.Map{"Status": "Error", "data": ok})
-	}
-	db := database.DB.Db
-	changePassword := new(model.ChangePassword)
-	c.BodyParser(&changePassword)
-
-	changePassword.OldPassword = helpers.HashPass(changePassword.OldPassword)
-
-	if changePassword.NewPassword1 != changePassword.NewPassword2 {
-		return c.Status(401).JSON(fiber.Map{"status": "faild", "message": "new passwords are not equals"})
-	}
-
-	if changePassword.OldPassword != user.Password {
-		return c.Status(401).JSON(fiber.Map{"status": "faild", "message": "old password is faild"})
-	}
-
-	changePassword.NewPassword1 = helpers.HashPass(changePassword.NewPassword1)
-
-	user.Password = changePassword.NewPassword1
-	err := db.Save(&user).Error
+	// Kullanıcıyı token ile doğrula
+	user, err := middleware.TokenControl(c)
 	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Unauthorized"})
+	}
+
+	// Şifre değişiklik isteğini parse et
+	changePassword := new(model.ChangePassword)
+	if err := c.BodyParser(&changePassword); err != nil {
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Invalid request"})
+	}
+
+	// Eski şifreyi doğrula
+	hashedOldPassword := helpers.HashPass(changePassword.OldPassword)
+	if hashedOldPassword != user.Password {
+		return c.Status(401).JSON(fiber.Map{"status": "faild", "message": "Old password is incorrect"})
+	}
+
+	// Yeni şifrelerin uyumunu kontrol et
+	if changePassword.NewPassword1 != changePassword.NewPassword2 {
+		return c.Status(401).JSON(fiber.Map{"status": "faild", "message": "New passwords do not match"})
+	}
+
+	// Şifrenin karmaşıklığını kontrol et (opsiyonel)
+	if len(changePassword.NewPassword1) < 8 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "message": "Password must be at least 8 characters long"})
+	}
+
+	// Yeni şifreyi hashle
+	hashedNewPassword := helpers.HashPass(changePassword.NewPassword1)
+
+	// Şifreyi güncelle
+	user.Password = hashedNewPassword
+	db := database.DB.Db
+	if err := db.Save(&user).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Failed to update password"})
 	}
 	return c.Status(200).JSON(fiber.Map{"status": "success", "message": "Password changed successfully"})
