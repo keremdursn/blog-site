@@ -77,7 +77,7 @@ func LogOut(c *fiber.Ctx) error {
 func UpdateUser(c *fiber.Ctx) error {
 	user, err := middleware.TokenControl(c)
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "server error"})
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "server errorrrrr"})
 	}
 
 	db := database.DB.Db
@@ -92,7 +92,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	// }
 
 	// updateUserData := new(model.UpdateUser)
-	// err = c.BodyParser(&updateUserData)
+	// c.BodyParser(&updateUserData)
 	// if err != nil {
 	// 	return c.Status(500).JSON(fiber.Map{"status": "error", "message": "json bodyparse edilemedi.", "data": err})
 	// }
@@ -109,7 +109,7 @@ func UpdateUser(c *fiber.Ctx) error {
 		user.Name = name
 	}
 	if len(surname) != 0 {
-		user.Surname = surname
+	    user.Surname = surname
 	}
 	if len(username) != 0 {
 		user.Username = username
@@ -117,7 +117,7 @@ func UpdateUser(c *fiber.Ctx) error {
 
 	err = db.Save(&user).Error
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "server error"})
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "server error!"})
 	}
 	return c.Status(200).JSON(fiber.Map{"status": "success", "message": "user data has been successfully updated "})
 
@@ -165,20 +165,20 @@ func ChangePassword(c *fiber.Ctx) error {
 }
 
 func DeleteAccount(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(model.User)
-	if !ok {
-		return c.Status(400).JSON(fiber.Map{"Status": "Error", "data": ok})
+	user, err := middleware.TokenControl(c)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Unauthorized"})
 	}
 
 	db := database.DB.Db
 	// var user model.User  token kontrolü gelince bunu kaldırdık
 
-	id := c.Params("id")
-	err := db.Where("id = ?", id).First(&user).Error
-	if err != nil {
-		return c.Status(400).JSON(fiber.Map{"Status": "Error", "Message": "user not found"})
-	}
-
+	// id := c.Params("id")
+	// err = db.Where("id = ?", id).First(&user).Error
+	// if err != nil {
+	// 	return c.Status(400).JSON(fiber.Map{"Status": "Error", "Message": "user not found"})
+	// }
+ 
 	err = db.Delete(&user).Error
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "failed to delete user", "data:": nil})
@@ -199,17 +199,16 @@ func GetAllUser(c *fiber.Ctx) error {
 }
 
 func GetUserByID(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(model.User)
-	if !ok {
-		return c.Status(400).JSON(fiber.Map{"Status": "Error", "data": ok})
+	_, err := middleware.TokenControl(c)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Unauthorized"})
 	}
-
 	db := database.DB.Db
-	// var user model.User
 
 	id := c.Params("id")
+	var user model.User
 
-	err := db.Where("id = ?", id).First(&user).Error
+	err = db.Where("id = ?", id).First(&user).Error
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"Status": "Error", "Message": "user not found"})
 	}

@@ -24,7 +24,8 @@ func TokenControl(c *fiber.Ctx) (model.User, error) {
 		return model.User{}, c.Status(500).JSON(fiber.Map{"status": "error", "message": "you don't have session", "data": err})
 	}
 
-	err = db.Where("id = ?", session.UserID).First(&user).Error
+	userID := session.UserID
+	err = db.Where("id = ?", userID).First(&user).Error
 	if err != nil {
 		return model.User{}, c.Status(500).JSON(fiber.Map{"status": "error", "message": "user not found!", "data": err})
 	}
