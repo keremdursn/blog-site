@@ -13,12 +13,12 @@ func SignUp(c *fiber.Ctx) error {
 	db := database.DB.Db
 	var user model.User
 	c.BodyParser(&user)
-	err := helpers.UserNameControl(user.Username)
-	if err != nil {
-		return c.Status(400).JSON(fiber.Map{"status": "failed", "message": "username already taken."})
-	}
+	// err := helpers.UserNameControl(user.Username)
+	// if err != nil {
+	// 	return c.Status(400).JSON(fiber.Map{"status": "failed", "message": "username already taken."})
+	// }
 
-	err = db.Create(&user).Error
+	err := db.Create(&user).Error
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"status": "error", "message": " server error"})
 	}
@@ -31,7 +31,7 @@ func LogIn(c *fiber.Ctx) error {
 
 	c.BodyParser(&login)
 
-	login.Password = helpers.HashPass(login.Password)
+	// login.Password = helpers.HashPass(login.Password)
 
 	user := new(model.User)
 	err := db.Where("username =? and password =? ", login.Username, login.Password).First(&user).Error
@@ -49,7 +49,28 @@ func LogIn(c *fiber.Ctx) error {
 	session.Token = token
 	db.Create(&session)
 
-	return c.Status(200).JSON(fiber.Map{"status": "success", "message": "login success", "data": user})
+	return c.Status(200).JSON(fiber.Map{"status": "success", "message": "login success", "data": user, "token": token})
+}
+
+func LogOut(c *fiber.Ctx) error {
+	user, ok := c.Locals("user").(model.User)
+	if !ok {
+		return c.Status(400).JSON(fiber.Map{"Status": "Error", "data": ok})
+	}
+	db := database.DB.Db
+	session := new(model.Session)
+	err := db.Where("user_id = ? ", user.ID).First(&session).Error
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "server error"})
+	}
+	session.IsActive = false
+	
+	err = database.DB.Db.Raw("DELETE FROM sessions WHERE user_id= ?", user.ID).Scan(&session).Error
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "server error"})
+	}
+
+	return c.Status(200).JSON(fiber.Map{"status": "success", "message": "logout success"})
 }
 
 func UpdateUser(c *fiber.Ctx) error {
@@ -93,7 +114,7 @@ func UpdateUser(c *fiber.Ctx) error {
 		user.Username = username
 	}
 
-	err := db.Updates(&user).Error
+	err := db.Save(&user).Error
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "server error"})
 	}

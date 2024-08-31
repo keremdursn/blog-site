@@ -2,7 +2,6 @@ package router
 
 import (
 	"app/controllers"
-	"app/middleware"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -13,9 +12,11 @@ func User(app *fiber.App) {
 	user := v1.Group("/user")
 
 	user.Post("/signup", controllers.SignUp)
-	user.Get("/login", controllers.LogIn)
-	user.Put("/update-user/:id", middleware.TokenControl, controllers.UpdateUser)
-	user.Delete("/delete-account/:id", middleware.TokenControl, controllers.DeleteAccount)
+	user.Post("/login", controllers.LogIn)
+	user.Get("/logout", controllers.LogOut)
+	user.Put("/update-user/", controllers.UpdateUser)
+	user.Put("/change-password", controllers.ChangePassword)
+	user.Delete("/delete-account/", controllers.DeleteAccount)
 	user.Get("/get-all-user", controllers.GetAllUser)
 	user.Get("/:id", controllers.GetUserByID)
 }
