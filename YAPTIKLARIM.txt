@@ -1,7 +1,1 @@
-29.08.2024 : Update delete getall getbyid 
 
-30.08.2024 : jwt auth token generator token-control
-
-31.08.2024 : CHANGE PASS SUCCESS
-	     LOGOUT SUCCESS
-	     HASHPASS SİSTEMİNİ ÇÖZDÜM
