@@ -1,6 +1,1 @@
-yapacaklarım:
-jwt authentication ve swagger eklemek
-password change eklenecek
-post eklenecek
 
-prometheus neymiş öğren
